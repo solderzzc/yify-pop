@@ -13,8 +13,8 @@ exports.create = function(self, streamURL, hostname, params) {
     if (e) {
       self.redirect('/');
     } else {
-      var osSpecificCommand = isWin ? 'cmd' : 'peerflix';
-      var osSpecificArgs = isWin ? ['/c', 'peerflix', decodeURIComponent(params.file),  '--port=' + port] : [decodeURIComponent(params.file),  '--port=' + port];
+      var osSpecificCommand = isWin ? 'cmd' : 'webtorrent';
+      var osSpecificArgs = isWin ? ['/c', 'webtorrent', decodeURIComponent(params.file),  '--port=' + port] : [decodeURIComponent(params.file),  '--port=' + port];
       var childStream = require('child')({
         command: osSpecificCommand,
         args: osSpecificArgs,
@@ -24,7 +24,7 @@ exports.create = function(self, streamURL, hostname, params) {
         }
       });
 
-      streamURL = "http://" + hostname + ":" + port;
+      streamURL = "http://" + hostname + ":" + port + "/0";
       var subtitles = {};
 
       // if it's a movie
