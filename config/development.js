@@ -52,6 +52,7 @@ var config = {
     }
   }
 , private: false
+, eztvapiserver: "http://eztvapi.re"
 };
 
 module.exports = config;

@@ -3,11 +3,40 @@ exports.create = function(self, streamURL, hostname, params) {
   var request = require('request');
   var AdmZip = require('adm-zip');
   var http = require('http');
+  var https = require('https');
   var fs = require('fs');
   var opensrt = require('opensrt_js');
   var _ = require('underscore');
 
   var isWin = process.platform === 'win32';
+
+  function getFilename(path){
+    path = path.substring(path.lastIndexOf("/")+ 1);
+    return (path.match(/[^.]+(\.[^?#]+)?/) || [])[0].toLowerCase();
+  }
+  var downloadTorrent = function(url,callback){
+    var myFile=getFilename(url);
+    var dest = "/tmp/"+myFile;
+    var file = fs.createWriteStream(dest);
+    console.log("myFile is "+myFile+" from "+url);
+
+    try{
+      var request = https.get(url, function(response) {
+        response.pipe(file);
+        file.on('finish', function() {
+          file.closeSync();
+          if (callback) callback(dest);
+        });
+      }).on('error', function(err) { // Handle errors
+        console.log("Got error");
+        fs.unlink(dest); // Delete the file async. (But we don't check the result)
+        if (callback) callback(null);
+      });
+    } catch (error){
+      console.log(error);
+      callback(null);
+    }
+  };
 
   getport(8889, 8999, function (e, port) {
     if (e) {
@@ -84,24 +113,27 @@ exports.create = function(self, streamURL, hostname, params) {
                   }
                 }
 
-                childStream.start(function(pid){
-                  geddy.config.streamingProcesses.push({
-                    pid: pid,
-                    child: childStream,
-                    torrent: decodeURIComponent(params.file),
-                    stream: streamURL,
-                    data: data,
-                    subtitles: subtitles
+                downloadTorrent(params.file,function(file){
+                  childStream.start(function(pid){
+                    geddy.config.streamingProcesses.push({
+                      pid: pid,
+                      child: childStream,
+                      torrent:file?file: decodeURIComponent(params.file),
+                      stream: streamURL,
+                      data: data,
+                      subtitles: subtitles
+                    });
                   });
-                });
 
-                self.respond({
-                  params: params,
-                  streamURL: streamURL,
-                  subtitles: subtitles
-                }, {
-                  format: 'html',
-                  template: 'app/views/main/stream'
+                  self.respond({
+                    params: params,
+                    streamURL: streamURL,
+                    subtitles: subtitles
+                  }, {
+                    format: 'html',
+                    template: 'app/views/main/stream'
+                  });
+
                 });
               }
             });
@@ -110,7 +142,7 @@ exports.create = function(self, streamURL, hostname, params) {
       }
       // else if it's a tv show
       else {
-        request('http://eztvapi.re/show/' + params.id, function (error, response, body) {
+        request(geddy.config.eztvapiserver + '/show/' + params.id, function (error, response, body) {
           if (!error) {
             var show = JSON.parse(body);
 

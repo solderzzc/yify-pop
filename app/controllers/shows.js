@@ -59,7 +59,7 @@ var Shows = function () {
     var request = require('request');
     var baseURL = "http://" + req.headers.host + '/';
 
-    request('http://eztvapi.re/show/' + params.id, function (error, response, body) {
+    request(geddy.config.eztvapiserver+'/show/' + params.id, function (error, response, body) {
       if (!error) {
         var show = JSON.parse(body);
 
